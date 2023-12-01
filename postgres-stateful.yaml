@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresdb-stateful
+spec:
+  serviceName: postgres-headless-svc
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgresdb-stateful
+  template:
+    metadata:
+      labels:
+        app: postgresdb-stateful
+    spec:
+      containers:
+        - name: postgresdb-learn
+          image: mypostgreskube:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POSTGRES_DB
+              value: testdb
+            - name: POSTGRES_USER
+              value: testUser
+            - name: POSTGRES_PASSWORD
+              value: testPassword
+            - name: PRIMARY_POD_IP
+              value:
+            - name: PEER_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-volume
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: demo-storage
+        resources:
+          requests:
+            storage: 1Gi
+
